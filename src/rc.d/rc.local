@@ -1,3 +1,0 @@
-#!/bin/bash
-sh /etc/init.d/sethostname2.sh
-sh /etc/init.d/userdataExecutor
