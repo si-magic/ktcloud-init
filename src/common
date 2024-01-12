@@ -1,0 +1,25 @@
+declare -r NMCLI="nmcli"
+
+get_activeconns () {
+	local line arr
+
+	"$NMCLI" -t c s --active | while read line
+	do
+		arr=( ${line//:/ } )
+		[ "${arr[2]}" == "loopback" ] && continue # skip lo
+
+		echo "${arr[1]}"
+	done
+}
+
+# params
+#   1: the dhcp option ("dhcp_server_identifier", "routers" or "host-name")
+get_dhcpopt () {
+	local conn
+
+	get_activeconns | while read conn
+	do
+		"$NMCLI" -t c s "$conn" |
+			sed -nE -e 's/DHCP[46]\.OPTION\[[0-9]+\]:\s{0,}'"$1"'\s{0,}=\s{0,}(.*)/\1/p'
+	done
+}

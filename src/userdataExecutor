@@ -10,50 +10,44 @@
 ### END INIT INFO
 # description: uCloud server userdata execution script
 
-DHCP_FOLDERS="/var/lib/dhclient/* /var/lib/dhcp3/* /var/lib/dhcp/*"
-for DHCP_FILE in $DHCP_FOLDERS
-do
-           if [ -f $DHCP_FILE ]
-           then
-                     RVM_IP=$(grep dhcp-server-identifier $DHCP_FILE | tail -1 | awk '{print $NF}' | tr -d '\;')
-                     logger -t "cloud" "Found RVM IP $RVM_IP in $DHCP_FILE"
-                     logger -t "cloud" "Sending userdata request to RVM at $RVM_IP"
-                     wget -q -t 3 -T 20 http://$RVM_IP/latest/user-data -O /tmp/userdata -o /dev/null
-                     chmod 755 /tmp/userdata
+. "$(dirname "${BASH_SOURCE[0]}")/common"
 
-                     if [ -s /tmp/userdata ]
-                     then
-                      if [ ! -d /var/backups ]
-                      then
-                             mkdir /var/backups
-                      fi
-                      if [ -f /var/backups/userdata_old ]
-                      then
-                            diff -u /tmp/userdata /var/backups/userdata_old >> /var/backups/userdata_diff.log
-                            if [ ! -s /var/backups/userdata_diff.log ]
-                            then
-                                   rm -f /tmp/userdata
-                            else
-                                   chattr -a /var/backups/userdata_old
-                                   rm -f /var/backups/userdata_old
-                                   logger -t "cloud" "Executing userdata..."
-                                   sh /tmp/userdata > /tmp/userdata.log
-                                   logger -t "cloud" "Execution of userdata script is done"
-                                   mv -f /tmp/userdata /var/backups/userdata_old
-                                   chattr +a /var/backups/userdata_old
-                            fi
-                            rm /var/backups/userdata_diff.log
-                      else
-                            logger -t "cloud" "Executing userdata..."
-                            sh /tmp/userdata > /tmp/userdata.log
-                            logger -t "cloud" "Execution of userdata script is done"
-                            mv -f /tmp/userdata /var/backups/userdata_old
-                            chattr +a /var/backups/userdata_old
-                      fi
-                     fi
-           else
-                     logger -t "cloud" "Could not find RVM IP in $DHCP_FILE"
-           fi
-#rm -rf /etc/init.d/userdataExecutor
+for RVM_IP in $(get_dhcpopt dhcp-server-identifier)
+do
+       echo "Sending userdata request to RVM at $RVM_IP"
+       curl -Ls -retry 3 -m 20 http://$RVM_IP/latest/user-data -o /tmp/userdata
+       chmod 755 /tmp/userdata
+
+       if [ -s /tmp/userdata ]
+       then
+              if [ ! -d /var/backups ]
+              then
+                     mkdir /var/backups
+              fi
+              if [ -f /var/backups/userdata_old ]
+              then
+              diff -u /tmp/userdata /var/backups/userdata_old >> /var/backups/userdata_diff.log
+              if [ ! -s /var/backups/userdata_diff.log ]
+              then
+                     rm -f /tmp/userdata
+              else
+                     chattr -a /var/backups/userdata_old
+                     rm -f /var/backups/userdata_old
+                     echo "Executing userdata..."
+                     sh /tmp/userdata > /tmp/userdata.log
+                     echo "Execution of userdata script is done"
+                     mv -f /tmp/userdata /var/backups/userdata_old
+                     chattr +a /var/backups/userdata_old
+              fi
+              rm /var/backups/userdata_diff.log
+              else
+              echo "Executing userdata..."
+              sh /tmp/userdata > /tmp/userdata.log
+              echo "Execution of userdata script is done"
+              mv -f /tmp/userdata /var/backups/userdata_old
+              chattr +a /var/backups/userdata_old
+              fi
+       fi
 done
 
+#rm -rf /etc/init.d/userdataExecutor

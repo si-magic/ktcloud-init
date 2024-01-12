@@ -18,43 +18,28 @@
 # Modify this line to specify the user (default is root)
 user=root
 
-
-
-# Add your DHCP lease folders here
-DHCP_FOLDERS="/var/lib/dhclient/* /var/lib/dhcp3/*"
+. "$(dirname "${BASH_SOURCE[0]}")/common"
 
 keys_received=0
-file_count=0
 
-for DHCP_FILE in $DHCP_FOLDERS
+for SSHKEY_SERVER_IP in $(get_dhcpopt dhcp-server-identifier)
 do
-        if [ -f $DHCP_FILE ]
+        echo "Sending request to ssh key server at $SSHKEY_SERVER_IP"
+
+        publickey=$(curl -Ls --retry 3 -m 20 http://$SSHKEY_SERVER_IP/latest/public-keys)
+
+        if [ $? -eq 0 ]
         then
-                file_count=$((file_count+1))
-                SSHKEY_SERVER_IP=$(grep dhcp-server-identifier $DHCP_FILE | tail -1 | awk -F" " '{print $3}' | tr -d '\;')
-
-                if [ -n $SSHKEY_SERVER_IP ]
-                then
-                        logger -t "cloud" "Sending request to ssh key server at $SSHKEY_SERVER_IP"
-
-                        publickey=$(wget -t 3 -T 20 -O - http://$SSHKEY_SERVER_IP/latest/public-keys 2>/dev/null)
-
-                        if [ $? -eq 0 ]
-                        then
-                                logger -t "cloud" "Got response from server at $SSHKEY_SERVER_IP"
-                                keys_received=1
-                                break
-                        fi
-                else
-                        logger -t "cloud" "Could not find ssh key server IP in $DHCP_FILE"
-                fi
+                echo "Got response from server at $SSHKEY_SERVER_IP"
+                keys_received=1
+                break
         fi
 done
 
 # did we find the keys anywhere?
 if [ "$keys_received" == "0" ]
 then
-    logger -t "cloud" "Failed to get ssh keys from any server"
+    echo "Failed to get ssh keys from any server"
     exit 1
 fi
 
