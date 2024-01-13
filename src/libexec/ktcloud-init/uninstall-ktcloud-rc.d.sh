@@ -1,3 +1,4 @@
+#!/bin/bash
 # Make a backup
 tar -C /etc -czf /etc/rc.d.tar.gzip rc.d
 
