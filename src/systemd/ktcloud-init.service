@@ -1,0 +1,16 @@
+[Unit]
+Description=KT Cloud VM instance init scripts
+After=network-online.target local-fs.target remote-fs.target
+Requires=network-online.target local-fs.target
+Conflicts=cloud-config.service cloud-final.service cloud-init-hotplugd.service cloud-init-local.service cloud-init.service
+
+[Service]
+Type=oneshot
+ExecStart=-/usr/libexec/ktcloud-init/sethostname2.sh
+ExecStart=-/usr/libexec/ktcloud-init/cloud-set-guest-password
+ExecStart=-/usr/libexec/ktcloud-init/cloud-set-guest-sshkey.in
+ExecStart=-/usr/libexec/ktcloud-init/userdataExecutor
+StandardOutput=journal+console
+
+[Install]
+WantedBy=multi-user.target
