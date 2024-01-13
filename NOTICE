@@ -1,0 +1,16 @@
+The project contains external works.
+
+
+"KT Cloud"는 주식회사 케이티의 상표입니다.
+https://doi.org/10.8080/4020210260753
+
+The original copies of scripts are taken from KT Cloud VM images. Our copyright
+does not extend to these files.
+
+	/src/libexec/ktcloud-init/userdataExecutor
+	/src/libexec/ktcloud-init/sethostname2.sh
+
+These files are from Apache CloudStack.
+
+	/src/libexec/ktcloud-init/cloud-set-guest-sshkey.in
+	/src/libexec/ktcloud-init/cloud-set-guest-password
